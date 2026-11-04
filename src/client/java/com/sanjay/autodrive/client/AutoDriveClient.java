@@ -18,7 +18,7 @@ public final class AutoDriveClient implements ClientModInitializer {
             graphics.fill(8,8,276,57,0xC0101824);
             graphics.text(client.font,"AUTODRIVE  |  "+v.mode(),15,14,0xFF6EDAE6);
             graphics.text(client.font,String.format(Locale.ROOT,"%.1f km/h   Lap %d   Checkpoint %d",v.speedMetersPerSecond()*3.6,v.laps(),v.checkpoint()),15,28,0xFFFFFFFF);
-            graphics.text(client.font,"Forward: throttle  |  Back / Jump: brake",15,42,0xFFC3CCD6);
+            graphics.text(client.font,v.mode().equals("AUTONOMOUS") ? "AI driving  |  /autodrive auto off" : "Forward: throttle  |  Back / Jump: brake",15,42,0xFFC3CCD6);
         });
     }
 }

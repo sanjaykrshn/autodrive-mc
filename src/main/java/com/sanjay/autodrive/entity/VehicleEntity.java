@@ -1,5 +1,7 @@
 package com.sanjay.autodrive.entity;
 
+import com.sanjay.autodrive.AutoDrive;
+import com.sanjay.autodrive.ai.Autopilot;
 import com.sanjay.autodrive.track.TrackLayout;
 import com.sanjay.autodrive.track.Tracks;
 import com.sanjay.autodrive.vehicle.VehicleControl;
@@ -35,6 +37,7 @@ public final class VehicleEntity extends Entity {
     private double speed;
     private VehicleControl programmatic = VehicleControl.STOP;
     private int controlTicks;
+    private Autopilot autopilot;
     private int nextCheckpoint = 1;
     private int collisionCount;
 
@@ -51,7 +54,12 @@ public final class VehicleEntity extends Entity {
     public int checkpoint() { return entityData.get(CHECKPOINT); }
     public int collisionCount() { return collisionCount; }
     public void setOwner(UUID owner) { this.owner = owner; }
-    public boolean ownedBy(Player player) { return owner == null || owner.equals(player.getUUID()); }
+    public boolean ownedBy(Player player) {
+        if (owner == null || owner.equals(player.getUUID())) return true;
+        // Dev clients get a new random offline UUID every launch, so a car whose owner is not online is re-claimed.
+        if (level() instanceof ServerLevel server && server.getServer().getPlayerList().getPlayer(owner) == null) { owner = player.getUUID(); return true; }
+        return false;
+    }
 
     /** Server-side interface for commands and a future learned policy. Lease expiry always brakes. */
     public void applyControl(VehicleControl control, int ticks) {
@@ -59,6 +67,13 @@ public final class VehicleEntity extends Entity {
         programmatic = control;
         controlTicks = Math.clamp(ticks, 1, 1200);
         entityData.set(MODE, "PROGRAMMATIC");
+    }
+    /** Hands the car to the trained policy until another mode is selected. */
+    public void autonomous(Autopilot pilot) {
+        if (level().isClientSide()) throw new IllegalStateException("Vehicle controls must run on the server");
+        controlTicks = 0;
+        autopilot = pilot;
+        entityData.set(MODE, "AUTONOMOUS");
     }
     public void manual() { controlTicks = 0; entityData.set(MODE, "MANUAL"); }
     public void stop() { controlTicks = 0; programmatic = VehicleControl.STOP; speed = 0; setDeltaMovement(Vec3.ZERO); entityData.set(SPEED, 0f); entityData.set(MODE, "STOPPED"); }
@@ -81,6 +96,13 @@ public final class VehicleEntity extends Entity {
         } else if (mode().equals("MANUAL") && getFirstPassenger() instanceof ServerPlayer driver && ownedBy(driver)) {
             var input = driver.getLastClientInput();
             action = VehicleControl.manual(input.forward(), input.backward(), input.left(), input.right(), input.jump());
+        } else if (mode().equals("AUTONOMOUS") && autopilot != null) {
+            try {
+                action = autopilot.next(getX(), getZ(), Math.toRadians(getYRot()), speed);
+            } catch (ai.onnxruntime.OrtException e) {
+                AutoDrive.LOGGER.error("Driving policy failed; stopping the vehicle", e);
+                entityData.set(MODE, "STOPPED");
+            }
         }
         var below = level().getBlockState(blockPosition().below());
         boolean onRoad = below.is(Blocks.CONCRETE.gray()) || below.is(Blocks.CONCRETE.white())

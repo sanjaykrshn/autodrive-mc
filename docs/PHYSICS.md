@@ -1,4 +1,4 @@
-# Vehicle contract for later simulator integration
+# Vehicle contract shared with the Python simulator
 
 The authoritative implementation is `VehiclePhysics.java`. It has no Minecraft
 or Fabric dependencies and is tested independently.
@@ -39,6 +39,6 @@ control and speed. The vehicle's owner and circuit assignment persist; lap and
 collision counters are per-session. Ordered checkpoint proximity provides basic lap
 progress, not anti-cheat race timing or validated RL evaluation.
 
-The future Python simulator should reproduce the same tick duration, action ranges,
-coordinate convention and coefficients. Minecraft collision, gravity and surface
-interactions still require explicit simulator-to-game validation.
+`ml/physics.py` reproduces the same tick duration, action ranges, coordinate convention
+and coefficients. The simulator does not model Minecraft collision, gravity or block surfaces:
+it ends an episode when the car is more than 6 m from the centerline.

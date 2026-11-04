@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.sanjay.autodrive.AutoDrive;
+import com.sanjay.autodrive.ai.Autopilot;
 import com.sanjay.autodrive.entity.VehicleEntity;
 import com.sanjay.autodrive.track.TrackBuilder;
 import com.sanjay.autodrive.track.TrackLayout;
@@ -27,8 +28,11 @@ public final class AutoDriveCommands {
     public static void register() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
             literal("autodrive").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                .executes(c -> message(c, "AutoDrive: /autodrive track build all | track go <name> | spawn | manual | stop | reset | control <steering> <throttle> <brake> <ticks> | status"))
+                .executes(c -> message(c, "AutoDrive: /autodrive track build all | track go <name> | spawn | auto on|off | manual | stop | reset | control <steering> <throttle> <brake> <ticks> | status"))
                 .then(literal("spawn").executes(AutoDriveCommands::spawn))
+                .then(literal("auto")
+                    .then(literal("on").executes(AutoDriveCommands::autoOn))
+                    .then(literal("off").executes(c -> { var v = vehicle(c); if (v == null) return 0; v.manual(); return message(c,"Autonomous driving off. You have the wheel."); })))
                 .then(literal("manual").executes(c -> { var v = vehicle(c); if (v == null) return 0; v.manual(); return message(c,"Manual: movement keys steer/accelerate; back or jump brakes; sneak exits."); }))
                 .then(literal("stop").executes(c -> { var v = vehicle(c); if (v == null) return 0; v.stop(); return message(c,"Vehicle stopped. /autodrive manual to resume."); }))
                 .then(literal("reset").executes(c -> { var v = vehicle(c); if (v == null) return 0; var t = Tracks.get(v.trackId()); if (t == null) return fail(c,"Use /autodrive track go <name> first."); v.resetToTrack(t); return 1; }))
@@ -80,6 +84,22 @@ public final class AutoDriveCommands {
         else v.resetToTrack(track);
         player.startRiding(v);
         return message(c,track.title()+": movement keys accelerate/steer, back or jump brakes. /autodrive reset returns to this grid.");
+    }
+    private static int autoOn(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        var v = vehicle(c);
+        if (v == null) return 0;
+        TrackLayout track = Tracks.get(v.trackId());
+        if (track == null || v.level().dimension() != TrackBuilder.DIMENSION) return fail(c,"Autonomous driving needs a circuit. Use /autodrive track go <name> first.");
+        Autopilot pilot;
+        try {
+            pilot = new Autopilot(track, v.getX(), v.getZ());
+        } catch (Exception | LinkageError e) {
+            AutoDrive.LOGGER.error("Could not load the driving policy", e);
+            return fail(c,"Could not load the driving policy: "+e.getMessage());
+        }
+        if (Math.abs(pilot.lateral(v.getX(), v.getZ())) > TrackLayout.ROAD_HALF_WIDTH) return fail(c,"Put the car on the road first. /autodrive reset returns it to the grid.");
+        v.autonomous(pilot);
+        return message(c,"Autonomous driving on: "+track.title()+". /autodrive auto off takes back control.");
     }
     private static int spawn(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
         var player = c.getSource().getPlayerOrException();

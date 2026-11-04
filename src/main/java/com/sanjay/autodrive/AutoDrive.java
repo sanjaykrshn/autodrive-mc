@@ -29,6 +29,6 @@ public final class AutoDrive implements ModInitializer {
     @Override public void onInitialize() {
         TrackBuilder.register();
         AutoDriveCommands.register();
-        LOGGER.info("AutoDrive Phase 1 loaded: manual vehicles, continuous control API and three test circuits.");
+        LOGGER.info("AutoDrive loaded: manual and autonomous vehicles, continuous control API and three test circuits.");
     }
 }

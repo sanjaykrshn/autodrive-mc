@@ -1,0 +1,9 @@
+numpy
+gymnasium
+pytest
+stable-baselines3
+tensorboard
+matplotlib
+onnx
+onnxruntime
+onnxscript

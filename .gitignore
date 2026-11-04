@@ -38,3 +38,12 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+# python
+
+ml/.venv/
+__pycache__/
+.pytest_cache/
+ml/runs/
+ml/models/*
+!ml/models/ppo_v1.zip

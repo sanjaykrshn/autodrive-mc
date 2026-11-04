@@ -1,8 +1,10 @@
 # AutoDrive
 
-A Minecraft Fabric vehicle platform for a reinforcement learning driving project.
-**Phase 1 implements the Minecraft vehicle and test environment.** PPO training,
-Python simulation and ONNX inference are planned; this version does not include an autonomous policy.
+A Minecraft Fabric mod with a car that can drive itself. A PPO policy trained in a Python
+simulator is bundled with the mod as an ONNX model and runs live on the server through
+ONNX Runtime Java. Turn it on with `/autodrive auto on` and take back the wheel with `/autodrive auto off`.
+
+See [Autonomous driving](#autonomous-driving) to try it and [Results](#results) for what has been measured.
 
 ## Start the game
 
@@ -39,6 +41,7 @@ file is `build/libs/autodrive-0.1.0.jar`; the `-sources.jar` is for reading sour
 Use Minecraft **26.3**, Java **25 or newer**, Fabric Loader **0.19.5 or newer** and
 Fabric API **0.161.0+26.3**. Put the AutoDrive JAR and Fabric API in the game's `mods` folder.
 AutoDrive must be installed on both client and server. Commands require cheats/operator permission.
+The JAR is about 50 MB because it bundles ONNX Runtime for every supported platform.
 
 ## Your first drive
 
@@ -81,8 +84,58 @@ place roads into your overworld. Construction is incremental and can be repeated
 All three are asymmetric closed loops with 12-block-wide roads, white edge lines,
 red/white curbs, blue runoff, solid collision barriers, illuminated checkpoint
 markers and a checkerboard start/finish gantry. Road surfaces are at Y=-61;
-vehicles drive at Y=-60. The third layout is reserved for future evaluation;
-no learning or generalization result is claimed.
+vehicles drive at Y=-60. The third layout is held out of training for evaluation.
+
+## Autonomous driving
+
+After building the circuits, get in a car on one of them and switch the AI on:
+
+```mcfunction
+/autodrive track go rookie
+/autodrive auto on
+```
+
+The car drives itself, lap after lap, and the HUD shows `AUTONOMOUS`. You can use any of the
+three circuits. To take control again:
+
+```mcfunction
+/autodrive auto off
+```
+
+`/autodrive manual`, `/autodrive stop` and `/autodrive reset` also end autonomous driving,
+and so does right-clicking the car to get in. Things to know:
+
+- It only works on a circuit, because the policy reads the road's centerline. A car from
+  `/autodrive spawn` has no circuit, so use `track go`. The car must be on the road when you switch on.
+- Stay in the car or nearby. A car that drives out of loaded chunks stops updating.
+- The car has no reverse. If it ever gets stuck against a barrier, use `/autodrive reset`.
+
+### Results
+
+Measured with the `ppo_v1` policy, trained for 500,000 steps on `rookie` and `technical` only.
+`grand_prix` was held out of training.
+
+**Inside Minecraft** (`./gradlew runClientGameTest`): one lap per circuit from the starting grid.
+
+| Circuit | Lap completed | Collisions |
+| --- | --- | ---: |
+| `rookie` | yes | 0 |
+| `technical` | yes | 0 |
+| `grand_prix` (unseen) | yes | 0 |
+
+**In the Python simulator** (`ml/evaluate.py`): 20 episodes per circuit from randomized starts,
+ending when every checkpoint has been passed.
+
+| Circuit | Laps completed | Mean time | Mean distance from center |
+| --- | ---: | ---: | ---: |
+| `rookie` | 100% | 46.2 s | 2.23 m |
+| `technical` | 100% | 51.7 s | 2.34 m |
+| `grand_prix` (unseen) | 100% | 53.0 s | 2.11 m |
+
+These are small samples. The Minecraft result is a single lap per circuit, not repeated trials.
+The road is 12 blocks wide with no traffic or obstacles, and all three circuits were designed the
+same way, so this does not establish generalization to other kinds of road. There is also no
+baseline comparison yet: a simple hand-written driver has completed the training circuits in the simulator too.
 
 ### Controls
 
@@ -102,6 +155,8 @@ This phase supports forward driving; S is a brake, not reverse gear.
 
 ```mcfunction
 /autodrive spawn
+/autodrive auto on
+/autodrive auto off
 /autodrive manual
 /autodrive stop
 /autodrive reset
@@ -111,7 +166,8 @@ This phase supports forward driving; S is a brake, not reverse gear.
 
 `spawn` places a car in front of you; `track go` supplies a car at the selected grid.
 `reset` returns your current/nearby car to its grid. `stop` stops immediately;
-`manual` resumes keyboard control. Cars are owned by their spawning player.
+`manual` resumes keyboard control. Cars are owned by their spawning player, and a car
+whose owner is offline can be claimed by the next player to use it.
 An owner in Creative mode can remove a car by hitting it.
 
 ### Fix a damaged road or a stuck vehicle
@@ -154,7 +210,7 @@ with the mod installed.
 Arguments are **steering [-1,1], throttle [0,1], brake [0,1], duration [1,1200] ticks**.
 Positive steering turns right. There are 20 ticks per second. When the duration
 expires the car brakes and enters STOPPED mode. `/autodrive manual` returns control
-to the driver. These are test commands, not a scripted autonomous driver.
+to the driver. These are test commands; the trained driver is `/autodrive auto on`.
 
 Java integrations on the server can call:
 
@@ -166,38 +222,60 @@ The server owns movement and uses Minecraft collision resolution. Manual control
 use vanilla player input packets, so no client movement authority is required.
 The bicycle model and constants are documented in [docs/PHYSICS.md](docs/PHYSICS.md).
 
-## Core code to understand before Phase 2
+## How it works
 
-Read these in order. Track construction and rendering can wait.
+```text
+ml/ (Python)                                  src/ (Java, in the game)
+physics.py + track.py  mirror the Java        VehiclePhysics, TrackLayout
+env.py                 Gymnasium simulator    ObservationBuilder  same 9 observations
+train.py               PPO, saves models/     DrivingPolicy       runs the ONNX model
+export_onnx.py         ppo_v1.onnx  ───────►  Autopilot           observation → action, each tick
+                                              VehicleEntity       applies it with real collisions
+```
+
+Each server tick in autonomous mode:
+
+```text
+car position, heading, speed
+    → ObservationBuilder: 9 numbers relative to the car and the road
+    → DrivingPolicy: ONNX network
+    → VehicleControl(steering, throttle, brake)
+    → VehiclePhysics.step, then Minecraft movement and collisions
+```
+
+The observation is speed, signed distance from the centerline, sine and cosine of the heading error,
+the road's change of direction 5, 10, 20 and 40 m ahead, and the previous steering.
+
+Read these first:
 
 | File | What to understand |
 | --- | --- |
-| [VehicleControl.java](src/main/java/com/sanjay/autodrive/vehicle/VehicleControl.java) | The shared action contract: steering [-1,1], throttle [0,1], brake [0,1]. `manual()` converts keyboard input into the same actions a future policy will produce. |
-| [VehiclePhysics.java](src/main/java/com/sanjay/autodrive/vehicle/VehiclePhysics.java) | `step()` advances speed and heading by 0.05 seconds and returns horizontal displacement. This is the mathematical model the Python simulator needs to reproduce. |
-| [VehicleEntity.java](src/main/java/com/sanjay/autodrive/entity/VehicleEntity.java) | `tick()` selects an action, calls the physics model, applies Minecraft movement/collisions, and synchronizes speed. `applyControl()` accepts timed external actions; `manual()` and `stop()` change modes. |
-| [VehiclePhysicsTest.java](src/test/java/com/sanjay/autodrive/VehiclePhysicsTest.java) | Executable examples of acceleration, braking, drag, steering and the coordinate convention. Use these behaviors as simulator parity checks. |
+| [VehicleControl.java](src/main/java/com/sanjay/autodrive/vehicle/VehicleControl.java) | The action contract: steering [-1,1], throttle [0,1], brake [0,1], shared by keyboard and policy. |
+| [VehiclePhysics.java](src/main/java/com/sanjay/autodrive/vehicle/VehiclePhysics.java) | `step()` advances speed and heading by 0.05 seconds. `ml/physics.py` reproduces it. |
+| [VehicleEntity.java](src/main/java/com/sanjay/autodrive/entity/VehicleEntity.java) | `tick()` picks the action for the current mode, runs the physics and moves the entity. |
+| [ObservationBuilder.java](src/main/java/com/sanjay/autodrive/ai/ObservationBuilder.java) | Must match `_observation()` in `ml/env.py` exactly, or the network sees inputs it never trained on. |
+| [ml/env.py](ml/env.py) | The training environment: observations, reward, and when an episode ends. |
 
-The driving loop is:
-
-```text
-keyboard input or programmatic action
-    → VehicleControl(steering, throttle, brake)
-    → VehiclePhysics.step(previousState, action, offRoad)
-    → VehicleEntity moves through Minecraft and resolves collisions
-    → updated vehicle state
-```
-
-Physics speed is in **meters/second**; returned movement is in **blocks per tick**
-(assuming one block equals one meter). Yaw is in **radians** inside the model and
-**degrees** on the Minecraft entity. Yaw zero points toward +Z. Keep the 20 Hz step,
-action limits, coordinate convention and physics coefficients consistent in Python.
+Physics speed is in **meters/second**, and one block is one meter. Yaw is in **radians** in the model
+and **degrees** on the Minecraft entity, and yaw zero points toward +Z.
 See [docs/PHYSICS.md](docs/PHYSICS.md) for the complete contract.
 
-Phase 2 adds a Gymnasium environment with position/speed/heading state, relative
-observations, action stepping, rewards, reset behavior and episode termination.
-Observations, rewards, the Python environment, PPO training and ONNX inference
-are **not implemented yet**. Start by matching the existing vehicle dynamics in a
-straight-road simulator; policy training follows in Phase 3.
+## Train your own policy
+
+Only needed to change the driver. The mod ships with a trained model. From the `ml` folder:
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+python train.py               # writes models/ and TensorBoard logs in runs/
+python evaluate.py            # lap rate, time, deviation and smoothness per circuit
+python export_onnx.py         # writes models/ppo_v1.onnx and checks it against the model
+```
+
+Then copy `ml/models/ppo_v1.onnx` to `src/main/resources/autodrive/policy/ppo_v1.onnx` and run
+`python make_java_fixture.py`, which refreshes the data the Java parity test compares against.
 
 ## Development and verification
 
@@ -207,12 +285,15 @@ straight-road simulator; policy training follows in Phase 3.
 ./gradlew runClientGameTest
 ```
 
-`build` compiles both environments, runs 10 JUnit checks and runs the server GameTests
-for real entity movement, manual inputs, timed command expiry and wall collisions.
-The optional client smoke test creates a playable flat world, builds all three
-circuits, exercises keyboard driving through the actual client/server connection
-and captures screenshots. It opens a game window and needs a working graphics display.
+`build` compiles both environments, runs the JUnit checks (including Java-to-Python parity for
+observations and policy output) and runs the server GameTests for real entity movement, manual
+inputs, timed command expiry, wall collisions and the policy driving a car.
+The client test creates a playable flat world, builds all three circuits, exercises keyboard
+driving, has the policy lap each circuit and captures screenshots. It takes a few minutes,
+opens a game window and needs a working graphics display.
+
+The Python checks run from `ml/` with `pytest`.
 The test-only mod is excluded from the shipped JAR.
 
 See [docs/TESTING.md](docs/TESTING.md) for test coverage and [docs/ROADMAP.md](docs/ROADMAP.md)
-for the remaining phases. The Fabric project remains CC0-1.0 licensed.
+for what comes next. The Fabric project remains CC0-1.0 licensed.

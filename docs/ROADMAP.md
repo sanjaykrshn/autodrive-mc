@@ -9,21 +9,21 @@
 - Basic speed/mode/lap HUD, checkpoints, reset and vehicle ownership.
 - Physics/geometry unit tests, server entity GameTests and a client smoke test.
 
-## Phase 2 — Driving simulation
+## Phase 2 — Driving simulation (done)
 
-Create the Gymnasium simulator with matching physics, a straight-road environment,
-vehicle-relative observations, continuous actions, rewards, checkpoints and episode endings.
+Gymnasium simulator in `ml/` with physics and tracks checked against Java, vehicle-relative
+observations, continuous actions, rewards, checkpoints and episode endings.
 
-## Phase 3 — Reinforcement learning
+## Phase 3 — Reinforcement learning (first policy done)
 
-Train Stable-Baselines3/PyTorch PPO on straight roads, extend to curves and complex
-circuits, tune rewards and evaluate stability. Preserve Grand Prix Gardens as a
-held-out layout until evaluation.
+Stable-Baselines3 PPO trained on Rookie Circuit and Switchback Park, with Grand Prix Gardens held out.
+Still open: a harder evaluation, because every checkpoint scored 100% and the test cannot separate them,
+and a baseline to compare against. Straight-road curriculum training turned out not to be needed.
 
-## Phase 4 — Minecraft deployment
+## Phase 4 — Minecraft deployment (done)
 
-Export the learned policy to ONNX, integrate ONNX Runtime Java, extract live
-observations, apply model actions and validate transfer inside Minecraft.
+Policy exported to ONNX and run through ONNX Runtime Java with live observations, switched with
+`/autodrive auto on|off`. It completed one lap per circuit inside Minecraft with no collisions.
 
 ## Phase 5 — Reliability and generalization
 

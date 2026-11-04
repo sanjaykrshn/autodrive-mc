@@ -1,7 +1,9 @@
 package com.sanjay.autodrive.test;
 
 import com.sanjay.autodrive.AutoDrive;
+import com.sanjay.autodrive.ai.Autopilot;
 import com.sanjay.autodrive.entity.VehicleEntity;
+import com.sanjay.autodrive.track.TrackLayout;
 import com.sanjay.autodrive.vehicle.VehicleControl;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -10,6 +12,7 @@ import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
+import java.util.List;
 
 public class VehicleGameTests {
     private VehicleEntity car(GameTestHelper h) {
@@ -41,6 +44,23 @@ public class VehicleGameTests {
             h.assertTrue(car.getX()+car.getBbWidth()/2<=wallX+0.01,"Vehicle must not pass through walls");
             h.assertTrue(car.collisionCount()>0,"Collision must be observed");
             h.assertTrue(car.speedMetersPerSecond()<0.3,"Wall collision must stop forward speed");h.succeed();
+        });
+    }
+    @GameTest(structure="autodrive-test:driving_pad",maxTicks=110)
+    public void trainedPolicyDrivesAndSwitchesOff(GameTestHelper h) throws Exception {
+        var car=car(h);double start=car.getX();
+        // A loop whose first straight runs along the pad, in the direction the car faces.
+        var loop=new TrackLayout("pad","Pad","test",(int)Math.floor(car.getX()),(int)Math.floor(car.getZ()),List.of(
+            new TrackLayout.Point(0,0),new TrackLayout.Point(60,0),new TrackLayout.Point(80,20),new TrackLayout.Point(60,40),new TrackLayout.Point(0,40),new TrackLayout.Point(-20,20)));
+        car.autonomous(new Autopilot(loop,car.getX(),car.getZ()));
+        h.runAtTickTime(50,()->{
+            h.assertTrue(car.mode().equals("AUTONOMOUS"),"Policy must stay in control");
+            h.assertTrue(car.getX()>start+3,"Policy must drive the real entity forward");
+            h.assertTrue(car.speedMetersPerSecond()>3,"Policy must accelerate");
+            car.manual();
+        });
+        h.runAtTickTime(90,()->{
+            h.assertTrue(car.speedMetersPerSecond()==0,"Switching off with no driver must brake to a stop");h.succeed();
         });
     }
     @GameTest(structure="autodrive-test:driving_pad",maxTicks=100)

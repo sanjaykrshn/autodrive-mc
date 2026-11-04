@@ -34,6 +34,20 @@ public class CircuitClientTest implements FabricClientGameTest {
                 var car=(VehicleEntity)connection.getServerPlayer().getVehicle();
                 if(car.speedMetersPerSecond()>0.01) throw new AssertionError("Client brake failed");
             });
+            // The trained policy must lap every circuit in the real game through the real commands.
+            for(var track:Tracks.ALL) {
+                server.runCommand("execute as @a run autodrive track go "+track.id());
+                connection.waitForClientboundPackets();c.waitTicks(20);
+                server.runCommand("execute as @a run autodrive auto on");
+                server.waitFor(s -> { var car=(VehicleEntity)connection.getServerPlayer().getVehicle(); return car!=null && car.laps()>=1; },3000);
+                server.runOnServer(s -> {
+                    var car=(VehicleEntity)connection.getServerPlayer().getVehicle();
+                    if(!car.mode().equals("AUTONOMOUS")) throw new AssertionError("Policy lost control on "+track.id()+": "+car.mode());
+                    System.out.println("AUTODRIVE_AUTONOMOUS_LAP track="+track.id()+" collisions="+car.collisionCount());
+                });
+            }
+            server.runCommand("execute as @a run autodrive track go rookie");
+            connection.waitForClientboundPackets();c.waitTicks(20);
             server.runCommand("execute as @a run autodrive reset");
             c.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
             c.getInput().lookAt(-90,18);
