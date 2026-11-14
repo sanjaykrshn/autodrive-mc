@@ -15,11 +15,13 @@ AutoDrive is a Minecraft Fabric mod that puts a self-driving car on custom racin
 
 ## Results
 
-The bundled `ppo_v1` policy was trained for **500,000 steps** on the Easy and Medium circuits. The Hard circuit was held out of training.
+The AI practiced for **500,000 steps** on the Easy and Medium circuits. It was then tested on the Hard circuit, which it had not seen during training.
 
-![Evaluation results for Easy, Medium, and held-out Hard circuits, including Minecraft laps and collisions, simulator completion, mean lap time, and center deviation.](docs/images/evaluation-results.svg)
+![Evaluation results for Easy, Medium, and Hard circuits, including Minecraft laps and collisions, simulator completion, mean lap time, and center deviation.](docs/images/results-overview.svg)
 
-Minecraft measurements are one lap per circuit from the starting grid. Simulator results are 20 episodes per circuit from randomized starts. These are small samples on similarly designed, 12-block-wide roads without traffic or obstacles; they do not establish performance on arbitrary roads. There is no baseline comparison yet.
+In Minecraft, the car completed one lap per circuit from the starting grid without a collision. In the simulator, it completed 20 runs per circuit from random starting positions. The time and distance measurements come from those simulator runs.
+
+These are small tests on similar tracks without traffic or obstacles. They do not show how the car would perform on other kinds of roads, and there is no baseline comparison yet.
 
 ## Try it
 
