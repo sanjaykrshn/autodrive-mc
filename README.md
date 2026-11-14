@@ -17,11 +17,7 @@ AutoDrive is a Minecraft Fabric mod that puts a self-driving car on custom racin
 
 The bundled `ppo_v1` policy was trained for **500,000 steps** on the Easy and Medium circuits. The Hard circuit was held out of training.
 
-| Circuit | Minecraft: laps / collisions | Simulator: completed | Mean time | Mean center deviation |
-| --- | --- | ---: | ---: | ---: |
-| Easy (`rookie`) | 1 / 0 | 20 / 20 | 46.2 s | 2.23 m |
-| Medium (`technical`) | 1 / 0 | 20 / 20 | 51.7 s | 2.34 m |
-| Hard (`grand_prix`, held out) | 1 / 0 | 20 / 20 | 53.0 s | 2.11 m |
+![Evaluation results for Easy, Medium, and held-out Hard circuits, including Minecraft laps and collisions, simulator completion, mean lap time, and center deviation.](docs/images/driving-results.svg)
 
 Minecraft measurements are one lap per circuit from the starting grid. Simulator results are 20 episodes per circuit from randomized starts. These are small samples on similarly designed, 12-block-wide roads without traffic or obstacles; they do not establish performance on arbitrary roads. There is no baseline comparison yet.
 
