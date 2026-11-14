@@ -2,9 +2,9 @@
 
 AutoDrive is a Minecraft Fabric mod that puts a self-driving car on custom racing circuits. A **PPO reinforcement learning policy** learns to steer in a Python simulator, then runs inside Minecraft through ONNX Runtime. You can switch between autonomous and manual driving in the same car.
 
-![AutoDrive car driving autonomously on Rookie Circuit](docs/images/autonomous-driving.webp)
+![AutoDrive car driving autonomously on the Easy circuit](docs/images/autonomous-driving.webp)
 
-*The trained policy driving on Rookie Circuit in Minecraft.*
+*The trained policy driving on the Easy circuit in Minecraft.*
 
 ## What it does
 
@@ -15,13 +15,13 @@ AutoDrive is a Minecraft Fabric mod that puts a self-driving car on custom racin
 
 ## Results
 
-The bundled `ppo_v1` policy was trained for **500,000 steps** on Rookie Circuit and Switchback Park. Grand Prix Gardens was held out of training.
+The bundled `ppo_v1` policy was trained for **500,000 steps** on the Easy and Medium circuits. The Hard circuit was held out of training.
 
 | Circuit | Minecraft: laps / collisions | Simulator: completed | Mean time | Mean center deviation |
 | --- | --- | ---: | ---: | ---: |
-| Rookie Circuit | 1 / 0 | 20 / 20 | 46.2 s | 2.23 m |
-| Switchback Park | 1 / 0 | 20 / 20 | 51.7 s | 2.34 m |
-| Grand Prix Gardens (held out) | 1 / 0 | 20 / 20 | 53.0 s | 2.11 m |
+| Easy (`rookie`) | 1 / 0 | 20 / 20 | 46.2 s | 2.23 m |
+| Medium (`technical`) | 1 / 0 | 20 / 20 | 51.7 s | 2.34 m |
+| Hard (`grand_prix`, held out) | 1 / 0 | 20 / 20 | 53.0 s | 2.11 m |
 
 Minecraft measurements are one lap per circuit from the starting grid. Simulator results are 20 episodes per circuit from randomized starts. These are small samples on similarly designed, 12-block-wide roads without traffic or obstacles; they do not establish performance on arbitrary roads. There is no baseline comparison yet.
 
@@ -46,7 +46,7 @@ Wait for all three completion messages, then start a drive:
 /autodrive auto on
 ```
 
-The car drives itself and the HUD shows `AUTONOMOUS`. Use `/autodrive auto off` to take control, W to accelerate, A/D to steer, and S or Space to brake. F5 changes the camera view. Try the other circuits with `track go technical` or `track go grand_prix`.
+The car drives itself and the HUD shows `AUTONOMOUS`. Use `/autodrive auto off` to take control, W to accelerate, A/D to steer, and S or Space to brake. F5 changes the camera view. Try Medium with `/autodrive track go technical` or Hard with `/autodrive track go grand_prix`. The game uses the original circuit names and command IDs.
 
 The tracks are built in a dedicated test dimension. Autonomous driving requires a track car and a loaded road; use `/autodrive reset` if the car gets stuck. See the [user guide](docs/USER_GUIDE.md) for installation, controls and troubleshooting.
 
