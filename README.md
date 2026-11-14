@@ -54,7 +54,7 @@ The tracks are built in a dedicated test dimension. Autonomous driving requires 
 
 The Python environment mirrors the Java vehicle physics and track geometry. PPO trains on nine observations: speed, lateral and heading errors, road direction at four distances ahead, and previous steering. The exported ONNX network turns those observations into driving controls. Each server tick, Minecraft applies the controls with its own collision handling.
 
-![Training and driving flow: Python simulator to PPO training and ONNX model; Minecraft track observations flow through the model to driving controls and vehicle physics.](docs/images/autodrive-flow.svg)
+![Training and driving flow: Python simulator to PPO training and ONNX model; Minecraft track observations flow through the model to driving controls and vehicle physics.](docs/images/autodrive-system-flow.svg)
 
 The policy follows a known track centerline; it does not use camera vision or drive on arbitrary Minecraft roads.
 
