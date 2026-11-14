@@ -2,7 +2,7 @@
 
 AutoDrive is a Minecraft Fabric mod that puts a self-driving car on custom racing circuits. A **PPO reinforcement learning policy** learns to steer in a Python simulator, then runs inside Minecraft through ONNX Runtime. You can switch between autonomous and manual driving in the same car.
 
-![AutoDrive car driving autonomously on Rookie Circuit](docs/images/autonomous-driving.gif)
+![AutoDrive car driving autonomously on Rookie Circuit](docs/images/autonomous-driving.webp)
 
 *The trained policy driving on Rookie Circuit in Minecraft.*
 
