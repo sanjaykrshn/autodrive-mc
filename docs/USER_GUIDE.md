@@ -1,14 +1,16 @@
 # AutoDrive user guide
 
+This guide covers starting the mod, driving the car, and fixing common problems. The mod already includes a trained AI driver; you do not need to train one to play.
+
 ## Start the game
 
 ### Run from the source code
 
-1. Download this repository using **Code → Download ZIP** and extract it, or clone it.
-2. Install Java **25 or newer** and open a terminal in the project folder.
-3. Start the development game:
+1. Download and extract this repository using **Code → Download ZIP**, or clone it.
+2. Install **Java 25 or newer** and open a terminal in the project folder.
+3. Start Minecraft with the mod:
 
-   macOS/Linux:
+   macOS or Linux:
 
    ```sh
    ./gradlew runClient
@@ -20,153 +22,94 @@
    .\gradlew.bat runClient
    ```
 
-   If macOS/Linux reports permission denied, run `chmod +x gradlew` first.
-   The Gradle wrapper downloads the development dependencies, including Fabric API.
-4. Choose **Singleplayer**. Open an existing test world, or create a Creative world
-   with commands/cheats enabled. A Superflat world is convenient, but the mod also
-   provides its own flat test area inside any world.
+   The first launch downloads the required dependencies. If macOS or Linux says permission is denied, run `chmod +x gradlew`, then try again.
+4. Choose **Singleplayer**. Open a world with cheats enabled, or create a Creative world and enable cheats.
 5. Press **T** to open chat and follow the first-drive steps below.
 
-### Install in a normal Minecraft instance
+### Install in a regular Minecraft instance
 
-Build the mod with `./gradlew build` (Windows: `.\gradlew.bat build`). The installable
-file is `build/libs/autodrive-0.1.0.jar`; the `-sources.jar` is for reading source code.
+1. Build the mod by running `./gradlew build` (Windows: `.\gradlew.bat build`).
+2. Use Minecraft **26.3**, Java **25 or newer**, Fabric Loader **0.19.5 or newer**, and Fabric API **0.161.0+26.3**.
+3. Put `build/libs/autodrive-0.1.0.jar` and Fabric API in the Minecraft instance's `mods` folder. Do not use the `-sources.jar` file; it contains source code.
+4. Start the Fabric instance and open a world with cheats enabled. On a server, install AutoDrive on both the client and server; commands require operator permission.
 
-Use Minecraft **26.3**, Java **25 or newer**, Fabric Loader **0.19.5 or newer** and
-Fabric API **0.161.0+26.3**. Put the AutoDrive JAR and Fabric API in the game's `mods` folder.
-AutoDrive must be installed on both client and server. Commands require cheats/operator permission.
-The JAR is about 50 MB because it bundles ONNX Runtime for every supported platform.
+The AutoDrive JAR is about 50 MB because it includes the software needed to run the AI model on supported platforms.
 
 ## Your first drive
 
-Enter this command in Minecraft chat:
+1. Press **T** and build the tracks:
 
-```mcfunction
-/autodrive track build all
-```
+   ```mcfunction
+   /autodrive track build all
+   ```
 
-Wait for all three completion messages, then enter the first circuit:
+   Wait for all three messages saying the tracks are ready. If you already built them in this world, you can skip this step.
+2. Go to the Easy track and get in a car:
 
-```mcfunction
-/autodrive track go rookie
-```
+   ```mcfunction
+   /autodrive track go rookie
+   ```
 
-This teleports you to the starting grid and seats you in a car. Hold **W** to
-accelerate, use **A/D** to steer, and use **S** or **Space** to brake. Press **F5**
-for a third-person view; some keyboards require **Fn+F5**. Slow down before tight turns.
+3. Drive with **W** to accelerate, **A/D** to steer, and **S** or **Space** to brake. Press **F5** for a third-person view; some keyboards require **Fn+F5**.
+4. To let the AI drive, open chat and enter:
 
-If you are using an already-built AutoDrive Test Grounds save, skip the build command
-and go straight to `track go rookie`.
+   ```mcfunction
+   /autodrive auto on
+   ```
 
-To switch circuits, use either of these:
+   The screen shows `AUTONOMOUS`. To take control again, enter `/autodrive auto off`.
 
-```mcfunction
-/autodrive track go technical
-/autodrive track go grand_prix
-```
+To change tracks, use one of these commands:
 
-The circuits live in **AutoDrive Test Grounds**, the mod's own superflat dimension
-(`autodrive:test_tracks`). Building writes only to this dedicated area. It does not
-place roads into your overworld. Construction is incremental and can be repeated.
+| Track | Command | Length |
+| --- | --- | ---: |
+| Easy | `/autodrive track go rookie` | About 780 blocks |
+| Medium | `/autodrive track go technical` | About 871 blocks |
+| Hard | `/autodrive track go grand_prix` | About 890 blocks |
 
-| Circuit | Approximate length | Character |
-| --- | ---: | --- |
-| Rookie Circuit (`rookie`) | 780 blocks | Long straight, sweepers, chicane, hairpin and linked corners |
-| Switchback Park (`technical`) | 871 blocks | Alternating hairpins, chicanes and a tighter technical section |
-| Grand Prix Gardens (`grand_prix`) | 890 blocks | Fast sweepers, a braking hairpin and flowing S bends |
+The game uses its original track names and command IDs. The tracks are built in a separate flat test dimension, so building them does not place roads in your normal world. Each track has marked edges, barriers, checkpoints, and a start/finish line.
 
-All three are asymmetric closed loops with 12-block-wide roads, white edge lines,
-red/white curbs, blue runoff, solid collision barriers, illuminated checkpoint
-markers and a checkerboard start/finish gantry. Road surfaces are at Y=-61;
-vehicles drive at Y=-60. The third layout is held out of training for evaluation.
+## Controls and commands
 
-## Autonomous driving
-
-After building the circuits, get in a car on one of them and switch the AI on:
-
-```mcfunction
-/autodrive track go rookie
-/autodrive auto on
-```
-
-The car drives itself, lap after lap, and the HUD shows `AUTONOMOUS`. You can use any of the
-three circuits. To take control again:
-
-```mcfunction
-/autodrive auto off
-```
-
-`/autodrive manual`, `/autodrive stop` and `/autodrive reset` also end autonomous driving,
-and so does right-clicking the car to get in. Things to know:
-
-- It only works on a circuit, because the policy reads the road's centerline. A car from
-  `/autodrive spawn` has no circuit, so use `track go`. The car must be on the road when you switch on.
-- Stay in the car or nearby. A car that drives out of loaded chunks stops updating.
-- The car has no reverse. If it ever gets stuck against a barrier, use `/autodrive reset`.
-
-### Controls
-
-Right-click a car to enter. Use the normal movement bindings (defaults below):
+Right-click a car to enter it. The default controls are:
 
 | Input | Action |
 | --- | --- |
-| W | Throttle |
+| W | Accelerate |
 | A / D | Steer left / right |
 | S or Space | Brake |
-| Shift | Dismount |
+| Shift | Get out of the car |
 | F5 | Change camera view |
 
-The HUD shows speed in km/h, control mode, completed laps and the next checkpoint.
-Pass every checkpoint in order before crossing the finish to count a lap.
-This phase supports forward driving; S is a brake, not reverse gear.
+The car does not have reverse. The on-screen display shows speed, whether you or the AI is driving, completed laps, and the next checkpoint. Pass every checkpoint in order before crossing the finish line to count a lap.
 
-```mcfunction
-/autodrive spawn
-/autodrive auto on
-/autodrive auto off
-/autodrive manual
-/autodrive stop
-/autodrive reset
-/autodrive status
-/autodrive track list
-```
+| Command | What it does |
+| --- | --- |
+| `/autodrive track list` | List the tracks |
+| `/autodrive spawn` | Place a car in front of you |
+| `/autodrive auto on` | Start AI driving |
+| `/autodrive auto off` | Return control to the player |
+| `/autodrive manual` | Resume manual control |
+| `/autodrive stop` | Stop the car immediately |
+| `/autodrive reset` | Return the car to its starting grid |
+| `/autodrive status` | Show the car's status |
 
-`spawn` places a car in front of you; `track go` supplies a car at the selected grid.
-`reset` returns your current/nearby car to its grid. `stop` stops immediately;
-`manual` resumes keyboard control. Cars are owned by their spawning player, and a car
-whose owner is offline can be claimed by the next player to use it.
-An owner in Creative mode can remove a car by hitting it.
+For AI driving, use a car provided by `track go`: a car created with `spawn` is not assigned to a track. Start the AI while the car is on the road. Stay in or near the car; it stops updating if it travels into an unloaded part of the world. Right-clicking a car to get in, or using `manual`, `stop`, or `reset`, also ends AI driving.
 
-### Fix a damaged road or a stuck vehicle
+Cars belong to the player who spawned them. If that player is offline, another player can claim the car by using it. An owner in Creative mode can remove their car by hitting it. When you are outside a car, vehicle commands select the nearest unoccupied car within 12 blocks.
 
-If you accidentally break road blocks, restore the original circuit with:
+## Troubleshooting
 
-```mcfunction
-/autodrive track build rookie
-```
+- **The car is stuck or you are away from it:** Use `/autodrive reset` to reset a nearby car, or `/autodrive track go rookie` to return to the Easy starting grid with a car. Substitute `technical` or `grand_prix` for the other tracks.
+- **The car will not respond:** Use `/autodrive manual` to resume manual control. The S key and Space brake; neither reverses the car.
+- **The road is damaged:** Use `/autodrive track build rookie` to rebuild the Easy track, or substitute `technical` or `grand_prix`. Use `/autodrive track build all` to rebuild all three. Wait for the completion messages. Rebuilding replaces changes within the track area.
+- **The command is unknown:** Make sure AutoDrive is installed in the Minecraft instance you launched.
+- **Permission is denied:** Enable cheats in your world or ask the server operator for permission.
+- **The test dimension is unavailable:** Close and reopen the world with the mod installed.
 
-Use `technical` or `grand_prix` for the other circuits. To restore all three:
+## Programmatic control
 
-```mcfunction
-/autodrive track build all
-```
-
-Wait for the completion messages. Rebuilding restores the standard layout,
-including the road, curbs and barriers, and replaces edits within the course footprint.
-`/autodrive reset` resets your car; rebuilding repairs the road.
-
-If you fall through a hole or get separated from your car, use
-`/autodrive track go rookie` (or the relevant circuit) to return to a grid.
-If controls do not respond after `/autodrive stop` or a timed command, run
-`/autodrive manual`. When standing outside a car, vehicle commands select your nearest
-unoccupied car within 12 blocks. You can also right-click your car to enter and resume manual driving.
-
-If `/autodrive` is unknown, check that AutoDrive loaded in the correct Minecraft
-instance. If permission is denied, enable commands/cheats or ask the server operator
-for permission. If Test Grounds is unavailable, fully close and reopen the world
-with the mod installed.
-
-### Programmatic control
+These commands are for testing the car with specific inputs:
 
 ```mcfunction
 /autodrive control 0 1 0 40
@@ -174,37 +117,31 @@ with the mod installed.
 /autodrive control 0 0 1 20
 ```
 
-Arguments are **steering [-1,1], throttle [0,1], brake [0,1], duration [1,1200] ticks**.
-Positive steering turns right. There are 20 ticks per second. When the duration
-expires the car brakes and enters STOPPED mode. `/autodrive manual` returns control
-to the driver. These are test commands; the trained driver is `/autodrive auto on`.
+The arguments are **steering [-1, 1], throttle [0, 1], brake [0, 1], and duration [1, 1200] ticks**. Positive steering turns right. There are 20 ticks per second. When the duration ends, the car brakes and stops; `/autodrive manual` returns control to the player. To use the trained AI instead, use `/autodrive auto on`.
 
-Java integrations on the server can call:
+Java code running on the server can also call:
 
 ```java
 vehicle.applyControl(new VehicleControl(steering, throttle, brake), leaseTicks);
 ```
 
-The server owns movement and uses Minecraft collision resolution. Manual controls
-use vanilla player input packets, so no client movement authority is required.
-The bicycle model and constants are documented in [docs/PHYSICS.md](PHYSICS.md).
+The server controls movement and Minecraft handles collisions. Manual driving uses the game's normal player input. For more detail, see [vehicle physics](PHYSICS.md).
 
 ## Train your own policy
 
-Only needed to change the driver. The mod ships with a trained model. From the `ml` folder:
+This is optional: the mod already includes a trained model. To train another one, run these commands from the `ml` folder:
 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-python train.py               # writes models/ and TensorBoard logs in runs/
-python evaluate.py            # lap rate, time, deviation and smoothness per circuit
-python export_onnx.py         # writes models/ppo_v1.onnx and checks it against the model
+python train.py               # Train a model and save logs
+python evaluate.py            # Measure laps, time, deviation, and smoothness
+python export_onnx.py         # Export and check the ONNX model
 ```
 
-Then copy `ml/models/ppo_v1.onnx` to `src/main/resources/autodrive/policy/ppo_v1.onnx` and run
-`python make_java_fixture.py`, which refreshes the data the Java parity test compares against.
+Copy `ml/models/ppo_v1.onnx` to `src/main/resources/autodrive/policy/ppo_v1.onnx`. Then run `python make_java_fixture.py` from `ml/` to update the data used by the Java comparison test.
 
 ## Development and verification
 
@@ -214,15 +151,6 @@ Then copy `ml/models/ppo_v1.onnx` to `src/main/resources/autodrive/policy/ppo_v1
 ./gradlew runClientGameTest
 ```
 
-`build` compiles both environments, runs the JUnit checks (including Java-to-Python parity for
-observations and policy output) and runs the server GameTests for real entity movement, manual
-inputs, timed command expiry, wall collisions and the policy driving a car.
-The client test creates a playable flat world, builds all three circuits, exercises keyboard
-driving, has the policy lap each circuit and captures screenshots. It takes a few minutes,
-opens a game window and needs a working graphics display.
+`build` builds the mod and runs Java and server checks for the car, controls, collisions, and AI. The client test opens a game window, builds the tracks, tests manual and AI driving, and captures screenshots. It takes a few minutes and needs a working graphics display. Run `pytest` from `ml/` for the Python checks. The test-only mod is not included in the shipped JAR.
 
-The Python checks run from `ml/` with `pytest`.
-The test-only mod is excluded from the shipped JAR.
-
-See [docs/TESTING.md](TESTING.md) for test coverage and [docs/ROADMAP.md](ROADMAP.md)
-for what comes next. The Fabric project remains CC0-1.0 licensed.
+See [testing](TESTING.md) for more detail and the [roadmap](ROADMAP.md) for planned work. The project is licensed under CC0-1.0.

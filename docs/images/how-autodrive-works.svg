@@ -10,7 +10,7 @@
       <rect x="30" y="225" width="205" height="86" rx="7"/><rect x="275" y="225" width="205" height="86" rx="7"/><rect x="520" y="225" width="205" height="86" rx="7"/><rect x="765" y="225" width="205" height="86" rx="7"/>
     </g>
     <g stroke="#8b949e" stroke-width="1.8" fill="none" marker-end="url(#arrow)"><path d="M236 103 H266"/><path d="M481 103 H511"/><path d="M622.5 147 V216"/><path d="M236 268 H266"/><path d="M481 268 H511"/><path d="M726 268 H756"/></g>
-    <g fill="#e6edf3" font-size="19" font-weight="600"><text x="47" y="95">Python simulator</text><text x="292" y="95">PPO training</text><text x="537" y="95">ONNX model</text><text x="47" y="260">Track + car</text><text x="292" y="260">Observations</text><text x="537" y="260">Policy inference</text><text x="782" y="260">Vehicle motion</text></g>
-    <g fill="#8b949e" font-size="14"><text x="47" y="122">Physics and circuits</text><text x="292" y="122">Learns the driving policy</text><text x="537" y="122">Exported network</text><text x="47" y="287">Position and movement</text><text x="292" y="287">Nine road-relative inputs</text><text x="537" y="287">ONNX Runtime</text><text x="782" y="287">Controls + collisions</text></g>
+    <g fill="#e6edf3" font-size="19" font-weight="600"><text x="47" y="95">Python simulator</text><text x="292" y="95">PPO training</text><text x="537" y="95">ONNX model</text><text x="47" y="260">Track + car</text><text x="292" y="260">Observations</text><text x="537" y="260">AI driver</text><text x="782" y="260">Vehicle motion</text></g>
+    <g fill="#8b949e" font-size="14"><text x="47" y="122">Physics and circuits</text><text x="292" y="122">Learns the driving policy</text><text x="537" y="122">Exported network</text><text x="47" y="287">Position and movement</text><text x="292" y="287">Nine road-relative inputs</text><text x="537" y="287">Runs the trained model</text><text x="782" y="287">Controls + collisions</text></g>
   </g>
 </svg>
